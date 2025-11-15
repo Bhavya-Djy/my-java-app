@@ -1,0 +1,39 @@
+name: Deploy to DEV
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: app
+        path: .
+
+    # Only run if EC2 secrets exist (prevents AWS charges)
+    - name: Deploy to EC2
+      if: ${{ secrets.DEV_HOST != '' }}
+      uses: appleboy/scp-action@v0.2.2
+      with:
+        host: ${{ secrets.DEV_HOST }}
+        username: ${{ secrets.DEV_USER }}
+        key: ${{ secrets.DEV_KEY }}
+        source: "*.jar"
+        target: "/opt/myapp/app.jar"
+
+    - name: Restart Service
+      if: ${{ secrets.DEV_HOST != '' }}
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.DEV_HOST }}
+        username: ${{ secrets.DEV_USER }}
+        key: ${{ secrets.DEV_KEY }}
+        script: |
+          sudo systemctl restart myapp
