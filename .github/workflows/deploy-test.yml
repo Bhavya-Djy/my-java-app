@@ -1,0 +1,51 @@
+name: Deploy to TEST
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ''
+          minimum-approvals: 1
+
+  deploy-test:
+    needs: approve
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: app
+        path: .
+
+    # Only runs if TEST secrets exist → prevents AWS charges
+    - name: Deploy to TEST EC2
+      if: ${{ secrets.TEST_HOST != '' }}
+      uses: appleboy/scp-action@v0.2.2
+      with:
+        host: ${{ secrets.TEST_HOST }}
+        username: ${{ secrets.TEST_USER }}
+        key: ${{ secrets.TEST_KEY }}
+        source: "*.jar"
+        target: "/opt/myapp/app.jar"
+
+    - name: Restart TEST service
+      if: ${{ secrets.TEST_HOST != '' }}
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.TEST_HOST }}
+        username: ${{ secrets.TEST_USER }}
+        key: ${{ secrets.TEST_KEY }}
+        script: |
+          sudo systemctl restart myapp
