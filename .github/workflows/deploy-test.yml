@@ -41,3 +41,8 @@ jobs:
         key: ${{ secrets.TEST_KEY }}
         script: |
           sudo systemctl restart myapp
+
+
+    - name: Test Trigger Confirmation
+      run: echo "Workflow triggered!"
+
