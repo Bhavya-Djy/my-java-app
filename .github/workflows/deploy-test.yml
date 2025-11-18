@@ -5,19 +5,11 @@ on:
 
 jobs:
 
-  approve:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require Manual Approval
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ''
-          minimum-approvals: 1
-
   deploy-test:
-    needs: approve
     runs-on: ubuntu-latest
+    environment:
+      name: test
+
 
     steps:
     - name: Checkout code
